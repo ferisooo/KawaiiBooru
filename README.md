@@ -14,6 +14,28 @@ installer at `dist\KawaiiBooru Setup 1.0.0.exe`. Hand that to anyone — they
 double-click to install it like a normal app (no Node.js, no terminal needed).
 First run installs the packaging tool (~1–2 min); after that it's quick.
 
+## Logging in — get your Danbooru API key
+KawaiiBooru logs in with your Danbooru **username** and a **Danbooru API key**
+(not your password). You make the key once on Danbooru's website, then paste it
+into KawaiiBooru. Here's how:
+
+1. **Sign in** to your account at https://danbooru.donmai.us.
+2. Click the **My Account** tab (top right, under your username).
+3. **Scroll down** to the **API Key** row.
+4. Click **View**, and **enter your password** if you're prompted.
+5. Click the **Add** button to make a new key.
+6. **Type a name** for the key so you remember what it's for (e.g. `KawaiiBooru`).
+7. Set the **permissions** for the key — leave them unrestricted, or limit them —
+   then hit **Create**.
+8. **Copy** the key that appears.
+9. Back **in KawaiiBooru**, press **Log in**, **paste your key** into the API key
+   field, and **type your username**, then log in.
+
+Tick **"remember me"** if you want the app to keep you signed in next time. Your
+key is stored **only on your own PC** (in `auth.json`) and is sent **only to
+Danbooru** — never to anyone else. You can revoke a key any time from the same
+Danbooru API Key page.
+
 ## Fully readable source — nothing hidden
 This app is meant to be auditable. Every file is plain, readable source:
 
