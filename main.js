@@ -10,6 +10,13 @@ const FULL_BASE = 'https://danbooru.donmai.us';  // used when authenticated
 // Hardcoded, non-removable: never surface sexualized-minor content.
 const BLOCKED = ['loli', 'shota', 'lolicon', 'shotacon', 'toddlercon'];
 
+// True only for Danbooru's own hosts. Used to make sure the login API key is
+// never attached to a request aimed at any other site.
+function isDanbooruHost(url) {
+  try { return /(^|\.)donmai\.us$/.test(new URL(url).hostname); }
+  catch (e) { return false; }
+}
+
 function levelName(lvl) {
   return ({
     0: 'Anonymous', 10: 'Restricted', 20: 'Member', 30: 'Gold',
@@ -83,6 +90,30 @@ function setupWebviewAuth() {
       return cb({ redirectURL: FULL_BASE + '/users/new' });
     }
     return cb({});
+  });
+}
+
+// Keep the in-app browser pane on Danbooru only. Any link or popup that points
+// somewhere else opens in the user's real browser instead of loading untrusted
+// pages inside the app's webview.
+function setupWebviewNavGuard() {
+  app.on('web-contents-created', (_e, contents) => {
+    if (contents.getType() !== 'webview') return;
+
+    const sendOut = (ev, url) => {
+      if (!isDanbooruHost(url)) {
+        ev.preventDefault();
+        shell.openExternal(url);
+      }
+    };
+    contents.on('will-navigate', sendOut);
+    contents.on('will-redirect', sendOut);
+
+    contents.setWindowOpenHandler(({ url }) => {
+      if (isDanbooruHost(url)) return { action: 'allow' };
+      shell.openExternal(url);
+      return { action: 'deny' };
+    });
   });
 }
 
@@ -308,7 +339,8 @@ ipcMain.handle('download', async (_e, { url, filename }) => {
   if (!url) return { ok: false, error: 'no image' };
   try {
     const headers = { 'User-Agent': USER_AGENT, 'Referer': (auth ? FULL_BASE : SAFE_BASE) + '/' };
-    if (auth) headers['Authorization'] = 'Basic ' + Buffer.from(auth.login + ':' + auth.api_key).toString('base64');
+    // Only ever send the API key to Danbooru itself — never to any other host.
+    if (auth && isDanbooruHost(url)) headers['Authorization'] = 'Basic ' + Buffer.from(auth.login + ':' + auth.api_key).toString('base64');
     const res = await fetch(url, { headers });
     if (!res.ok) return { ok: false, error: `Download failed (${res.status})` };
     const buf = Buffer.from(await res.arrayBuffer());
@@ -332,7 +364,8 @@ ipcMain.handle('fetch-image', async (_e, url) => {
       'Referer': (auth ? FULL_BASE : SAFE_BASE) + '/',
       Accept: 'image/avif,image/webp,image/*,*/*'
     };
-    if (auth) {
+    // Only ever send the API key to Danbooru itself — never to any other host.
+    if (auth && isDanbooruHost(url)) {
       headers['Authorization'] =
         'Basic ' + Buffer.from(auth.login + ':' + auth.api_key).toString('base64');
     }
@@ -346,7 +379,7 @@ ipcMain.handle('fetch-image', async (_e, url) => {
   }
 });
 
-app.whenReady().then(() => { loadAuth(); setupWebviewAuth(); createWindow(); });
+app.whenReady().then(() => { loadAuth(); setupWebviewAuth(); setupWebviewNavGuard(); createWindow(); });
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
