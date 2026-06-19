@@ -46,6 +46,14 @@ can verify them against React's official releases.
 
 Made with 💜 for Feris.
 
+## Privacy & Terms
+- **[`PRIVACY.md`](PRIVACY.md)** — KawaiiBooru collects nothing about you. Feris
+  has no server and no access to your data; the only place your activity goes is
+  Danbooru, under Danbooru's own policies.
+- **[`TERMS.md`](TERMS.md)** — the terms of use, including the forking rules and
+  the legal disclaimers.
+
 ## License
-See `LICENSE`. You're free to use, modify, and share KawaiiBooru — the one
-rule is the in-app **mez.ink/ferisooo** credit must stay visible.
+You're free to use, modify, fork, and share KawaiiBooru — the one rule is that
+the in-app **mez.ink/ferisooo** credit (and credit to Claude's work on the
+implementation) must stay visible. See [`TERMS.md`](TERMS.md) for the full terms.
