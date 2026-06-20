@@ -511,6 +511,8 @@ function App() {
   const [page, setPage] = useState(1);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState('');
   const [lightbox, setLightbox] = useState(-1);
 
@@ -530,24 +532,48 @@ function App() {
     window.api.authGet().then((a) => setAccount(a || null));
   }, []);
 
-  const load = useCallback(async (t, p, ns, md) => {
-    setLoading(true); setError('');
-    const res = await window.api.fetchPosts(t, p, 30, ns, md);
+  const PAGE_SIZE = 30;
+  const load = useCallback(async (t, p, ns, md, append) => {
+    if (append) setLoadingMore(true); else setLoading(true);
+    setError('');
+    const res = await window.api.fetchPosts(t, p, PAGE_SIZE, ns, md);
     if (res.ok) {
-      setPosts(res.posts);
-      if (scrollRef.current) scrollRef.current.scrollTop = 0;
+      // a short page means Danbooru has nothing more to give
+      setHasMore(res.posts.length >= PAGE_SIZE);
+      if (append) {
+        setPosts((prev) => prev.concat(res.posts));
+      } else {
+        setPosts(res.posts);
+        if (scrollRef.current) scrollRef.current.scrollTop = 0;
+      }
     } else {
-      setError(res.error || 'Something went wrong');
-      setPosts([]);
+      setHasMore(false);
+      if (!append) { setError(res.error || 'Something went wrong'); setPosts([]); }
     }
-    setLoading(false);
+    if (append) setLoadingMore(false); else setLoading(false);
   }, []);
 
-  // refetch whenever query / page / nsfw / login-state / mode changes
+  // a fresh query / nsfw / login-state / mode change resets to page 1 and replaces
   useEffect(() => {
     if (account === undefined) return; // still checking stored auth
-    load(tags, page, nsfw, mode);
-  }, [tags, page, nsfw, account, mode, load]);
+    setHasMore(true);
+    setPage(1);
+    load(tags, 1, nsfw, mode, false);
+  }, [tags, nsfw, account, mode, load]);
+
+  // scrolling to the bottom bumps the page, which appends the next batch
+  useEffect(() => {
+    if (account === undefined || page <= 1) return;
+    load(tags, page, nsfw, mode, true);
+  }, [page]);
+
+  const onGalleryScroll = (e) => {
+    if (loading || loadingMore || !hasMore) return;
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 700) {
+      setPage((p) => p + 1);
+    }
+  };
 
   const search = (val) => {
     const raw = val !== undefined ? val : input;
@@ -703,7 +729,7 @@ function App() {
       {webUrl ? (
         <WebPane url={webUrl} title={webTitle} onExternal={(u) => window.api.openExternal(u)} onBack={backToGallery} />
       ) : (
-      <div className="gallery-scroll" ref={scrollRef}>
+      <div className="gallery-scroll" ref={scrollRef} onScroll={onGalleryScroll}>
         {loading ? (
           <div className="state">
             <div className="spinner"></div>
@@ -726,10 +752,14 @@ function App() {
                 <Card key={p.id + '-' + i} post={p} index={i} onOpen={setLightbox} />
               ))}
             </div>
-            <div className="pager">
-              <button className="page-btn" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>‹ prev</button>
-              <span className="page-num">{page}</span>
-              <button className="page-btn" onClick={() => setPage((p) => p + 1)}>next ›</button>
+            <div className="infinite-foot">
+              {loadingMore ? (
+                <div className="spinner"></div>
+              ) : hasMore ? (
+                <span className="foot-hint">scroll for more ♡</span>
+              ) : (
+                <span className="foot-hint">that's everything ♥</span>
+              )}
             </div>
           </>
         )}

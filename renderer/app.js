@@ -483,6 +483,8 @@
     const [page, setPage] = useState(1);
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState("");
     const [lightbox, setLightbox] = useState(-1);
     const [account, setAccount] = useState(void 0);
@@ -497,23 +499,47 @@
     useEffect(() => {
       window.api.authGet().then((a) => setAccount(a || null));
     }, []);
-    const load = useCallback(async (t, p, ns, md) => {
-      setLoading(true);
+    const PAGE_SIZE = 30;
+    const load = useCallback(async (t, p, ns, md, append) => {
+      if (append) setLoadingMore(true);
+      else setLoading(true);
       setError("");
-      const res = await window.api.fetchPosts(t, p, 30, ns, md);
+      const res = await window.api.fetchPosts(t, p, PAGE_SIZE, ns, md);
       if (res.ok) {
-        setPosts(res.posts);
-        if (scrollRef.current) scrollRef.current.scrollTop = 0;
+        setHasMore(res.posts.length >= PAGE_SIZE);
+        if (append) {
+          setPosts((prev) => prev.concat(res.posts));
+        } else {
+          setPosts(res.posts);
+          if (scrollRef.current) scrollRef.current.scrollTop = 0;
+        }
       } else {
-        setError(res.error || "Something went wrong");
-        setPosts([]);
+        setHasMore(false);
+        if (!append) {
+          setError(res.error || "Something went wrong");
+          setPosts([]);
+        }
       }
-      setLoading(false);
+      if (append) setLoadingMore(false);
+      else setLoading(false);
     }, []);
     useEffect(() => {
       if (account === void 0) return;
-      load(tags, page, nsfw, mode);
-    }, [tags, page, nsfw, account, mode, load]);
+      setHasMore(true);
+      setPage(1);
+      load(tags, 1, nsfw, mode, false);
+    }, [tags, nsfw, account, mode, load]);
+    useEffect(() => {
+      if (account === void 0 || page <= 1) return;
+      load(tags, page, nsfw, mode, true);
+    }, [page]);
+    const onGalleryScroll = (e) => {
+      if (loading || loadingMore || !hasMore) return;
+      const el = e.currentTarget;
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < 700) {
+        setPage((p) => p + 1);
+      }
+    };
     const search = (val) => {
       const raw = val !== void 0 ? val : input;
       if (val !== void 0) setInput(val);
@@ -628,7 +654,7 @@
       },
       it.label,
       it.ext ? " \u2197" : ""
-    ))))), webUrl ? /* @__PURE__ */ React.createElement(WebPane, { url: webUrl, title: webTitle, onExternal: (u) => window.api.openExternal(u), onBack: backToGallery }) : /* @__PURE__ */ React.createElement("div", { className: "gallery-scroll", ref: scrollRef }, loading ? /* @__PURE__ */ React.createElement("div", { className: "state" }, /* @__PURE__ */ React.createElement("div", { className: "spinner" }), /* @__PURE__ */ React.createElement("div", { className: "state-text" }, "summoning pretty pictures\u2026")) : error ? /* @__PURE__ */ React.createElement("div", { className: "state" }, /* @__PURE__ */ React.createElement("div", { className: "state-emoji" }, "\u2299\uFE4F\u2299"), /* @__PURE__ */ React.createElement("div", { className: "state-text" }, error)) : posts.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "state" }, /* @__PURE__ */ React.createElement("div", { className: "state-emoji" }, "(\uFF61\u2022\u0301\uFE3F\u2022\u0300\uFF61)"), /* @__PURE__ */ React.createElement("div", { className: "state-text" }, "nothing here\u2026 try another tag?")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "grid" }, posts.map((p, i) => /* @__PURE__ */ React.createElement(Card, { key: p.id + "-" + i, post: p, index: i, onOpen: setLightbox }))), /* @__PURE__ */ React.createElement("div", { className: "pager" }, /* @__PURE__ */ React.createElement("button", { className: "page-btn", disabled: page <= 1, onClick: () => setPage((p) => Math.max(1, p - 1)) }, "\u2039 prev"), /* @__PURE__ */ React.createElement("span", { className: "page-num" }, page), /* @__PURE__ */ React.createElement("button", { className: "page-btn", onClick: () => setPage((p) => p + 1) }, "next \u203A")))), showLogin && /* @__PURE__ */ React.createElement(LoginModal, { onClose: () => setShowLogin(false), onSuccess: onLoginSuccess, onSignup: openSignup, onProfile: openProfile }), lightbox >= 0 && posts[lightbox] && /* @__PURE__ */ React.createElement(
+    ))))), webUrl ? /* @__PURE__ */ React.createElement(WebPane, { url: webUrl, title: webTitle, onExternal: (u) => window.api.openExternal(u), onBack: backToGallery }) : /* @__PURE__ */ React.createElement("div", { className: "gallery-scroll", ref: scrollRef, onScroll: onGalleryScroll }, loading ? /* @__PURE__ */ React.createElement("div", { className: "state" }, /* @__PURE__ */ React.createElement("div", { className: "spinner" }), /* @__PURE__ */ React.createElement("div", { className: "state-text" }, "summoning pretty pictures\u2026")) : error ? /* @__PURE__ */ React.createElement("div", { className: "state" }, /* @__PURE__ */ React.createElement("div", { className: "state-emoji" }, "\u2299\uFE4F\u2299"), /* @__PURE__ */ React.createElement("div", { className: "state-text" }, error)) : posts.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "state" }, /* @__PURE__ */ React.createElement("div", { className: "state-emoji" }, "(\uFF61\u2022\u0301\uFE3F\u2022\u0300\uFF61)"), /* @__PURE__ */ React.createElement("div", { className: "state-text" }, "nothing here\u2026 try another tag?")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "grid" }, posts.map((p, i) => /* @__PURE__ */ React.createElement(Card, { key: p.id + "-" + i, post: p, index: i, onOpen: setLightbox }))), /* @__PURE__ */ React.createElement("div", { className: "infinite-foot" }, loadingMore ? /* @__PURE__ */ React.createElement("div", { className: "spinner" }) : hasMore ? /* @__PURE__ */ React.createElement("span", { className: "foot-hint" }, "scroll for more \u2661") : /* @__PURE__ */ React.createElement("span", { className: "foot-hint" }, "that's everything \u2665")))), showLogin && /* @__PURE__ */ React.createElement(LoginModal, { onClose: () => setShowLogin(false), onSuccess: onLoginSuccess, onSignup: openSignup, onProfile: openProfile }), lightbox >= 0 && posts[lightbox] && /* @__PURE__ */ React.createElement(
       Lightbox,
       {
         posts,
