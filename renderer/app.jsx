@@ -538,8 +538,10 @@ function App() {
     setError('');
     const res = await window.api.fetchPosts(t, p, PAGE_SIZE, ns, md);
     if (res.ok) {
-      // a short page means Danbooru has nothing more to give
-      setHasMore(res.posts.length >= PAGE_SIZE);
+      // Use Danbooru's RAW page size (before our rating/blocked filtering) to
+      // tell if more pages exist — the filtered list is almost always shorter.
+      const raw = res.raw != null ? res.raw : res.posts.length;
+      setHasMore(raw >= PAGE_SIZE);
       if (append) {
         setPosts((prev) => prev.concat(res.posts));
       } else {
@@ -574,6 +576,17 @@ function App() {
       setPage((p) => p + 1);
     }
   };
+
+  // If filtering left a page too short to overflow the viewport there'd be
+  // nothing to scroll, stalling the loader — so keep pulling pages until the
+  // gallery is actually scrollable (or Danbooru runs out).
+  useEffect(() => {
+    if (loading || loadingMore || !hasMore) return;
+    const el = scrollRef.current;
+    if (el && el.scrollHeight <= el.clientHeight + 4) {
+      setPage((p) => p + 1);
+    }
+  }, [posts, hasMore, loading, loadingMore]);
 
   const search = (val) => {
     const raw = val !== undefined ? val : input;

@@ -506,7 +506,8 @@
       setError("");
       const res = await window.api.fetchPosts(t, p, PAGE_SIZE, ns, md);
       if (res.ok) {
-        setHasMore(res.posts.length >= PAGE_SIZE);
+        const raw = res.raw != null ? res.raw : res.posts.length;
+        setHasMore(raw >= PAGE_SIZE);
         if (append) {
           setPosts((prev) => prev.concat(res.posts));
         } else {
@@ -540,6 +541,13 @@
         setPage((p) => p + 1);
       }
     };
+    useEffect(() => {
+      if (loading || loadingMore || !hasMore) return;
+      const el = scrollRef.current;
+      if (el && el.scrollHeight <= el.clientHeight + 4) {
+        setPage((p) => p + 1);
+      }
+    }, [posts, hasMore, loading, loadingMore]);
     const search = (val) => {
       const raw = val !== void 0 ? val : input;
       if (val !== void 0) setInput(val);

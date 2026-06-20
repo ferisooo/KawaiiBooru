@@ -306,7 +306,11 @@ ipcMain.handle('fetch-posts', async (_e, { tags, page, limit, nsfw, mode }) => {
         };
       });
 
-    return { ok: true, posts };
+    // `raw` is how many Danbooru actually returned for this page, BEFORE our
+    // rating/blocked-tag filtering. The renderer uses it to know whether more
+    // pages exist — filtering often shrinks a full page below the limit, which
+    // must NOT be mistaken for "end of results".
+    return { ok: true, posts, raw: data.length };
   } catch (err) {
     return { ok: false, error: err.message || 'Network error' };
   }
