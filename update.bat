@@ -3,12 +3,16 @@ setlocal
 title KawaiiBooru - Update
 cd /d "%~dp0"
 
+REM --- where to pull the latest version from ---
+set "REPO_URL=https://github.com/ferisooo/KawaiiBooru.git"
+set "BRANCH=main"
+
 echo.
 echo   =======================================
 echo      KawaiiBooru - updating... (^o^)
 echo   =======================================
 echo.
-echo   This will FORCE-PULL the latest version from the main branch
+echo   This will FORCE-PULL the latest version from the %BRANCH% branch
 echo   and OVERWRITE every change in this folder:
 echo.
 echo       "%~dp0"
@@ -34,19 +38,28 @@ if errorlevel 1 (
   exit /b 1
 )
 
-REM --- make sure we're inside a git clone ---
+REM --- if this isn't a git clone yet (e.g. downloaded as a ZIP), turn it into
+REM     one in place so we can pull. Nothing is moved or re-downloaded. ---
 if not exist ".git\" (
   echo.
-  echo   [!] This folder isn't a git clone, so there's nothing to pull.
-  echo       Re-download KawaiiBooru with:  git clone ^<repo-url^>
-  echo.
-  pause
-  exit /b 1
+  echo   No git history here ^(looks like a ZIP download^) - setting it up...
+  git init -q
+  if errorlevel 1 (
+    echo   [!] Couldn't initialise git in this folder.
+    pause
+    exit /b 1
+  )
+  git remote add origin "%REPO_URL%" 2>nul
+  if errorlevel 1 git remote set-url origin "%REPO_URL%"
 )
 
+REM --- make sure the remote points where we expect ---
+git remote get-url origin >nul 2>nul
+if errorlevel 1 git remote add origin "%REPO_URL%"
+
 echo.
-echo   Fetching latest from origin/main...
-git fetch origin main
+echo   Fetching latest from origin/%BRANCH%...
+git fetch origin %BRANCH%
 if errorlevel 1 (
   echo.
   echo   [!] Couldn't reach the server. Check your internet connection.
@@ -55,8 +68,8 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo   Resetting this folder to match origin/main...
-git reset --hard origin/main
+echo   Resetting this folder to match origin/%BRANCH%...
+git reset --hard origin/%BRANCH%
 if errorlevel 1 (
   echo.
   echo   [!] Reset failed.
