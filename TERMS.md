@@ -1,6 +1,6 @@
 # ♡ KawaiiBooru — Terms of Use
 
-_Last updated: 2026-06-19_
+_Last updated: 2026-06-20_
 
 By downloading, installing, running, copying, forking, or modifying KawaiiBooru
 ("the app"), you agree to these Terms of Use. If you do not agree, do not use the
@@ -102,13 +102,36 @@ authorized by, endorsed by, or sponsored by Danbooru, its operators, or any
 artist, character, or franchise whose work may appear through it. All trademarks
 and artwork are the property of their respective owners.
 
-## 11. Changes to these Terms
+## 11. Content complaints and takedowns
+
+KawaiiBooru does **not** host, store, or control any artwork — it only displays
+content served by Danbooru. If you believe content is infringing, illegal, or
+otherwise objectionable, your complaint must be directed to **Danbooru**, the
+party that actually hosts it, through their own reporting and DMCA processes.
+Feris cannot remove, edit, or moderate content that lives on Danbooru's servers.
+
+## 12. Governing law and disputes
+
+To the maximum extent permitted by law, these Terms and any dispute arising from
+the app are governed by the laws applicable in the maintainer's place of
+residence, without regard to conflict-of-law rules, and you agree that the app is
+provided on a non-commercial, "as is" basis as described above. Nothing in these
+Terms limits any rights you have that cannot be limited under the mandatory law of
+your jurisdiction.
+
+## 13. Entire agreement; no waiver
+
+These Terms, together with [`PRIVACY.md`](PRIVACY.md), are the entire agreement
+between you and the maintainer regarding the app, and supersede any prior
+understanding. A failure to enforce any provision is not a waiver of it.
+
+## 14. Changes to these Terms
 
 These Terms may be updated as the project evolves. Continued use of the app after
 changes means you accept the updated Terms. The "Last updated" date above and the
 repository's history reflect the current version.
 
-## 12. Severability
+## 15. Severability
 
 If any part of these Terms is found unenforceable, the remaining parts stay in
 full effect.

@@ -1,6 +1,6 @@
 # ♡ KawaiiBooru — Privacy Policy
 
-_Last updated: 2026-06-19_
+_Last updated: 2026-06-20_
 
 KawaiiBooru is a small, open-source desktop app that lets you browse art from
 [Danbooru](https://danbooru.donmai.us). This document explains, in plain words,
@@ -24,8 +24,10 @@ to Feris or anyone else:
 
 - **Danbooru login (optional).** If — and only if — you tick **"remember me"**
   when logging in, your Danbooru username and API key are saved to a local file
-  named `auth.json` in your user-data folder on your own device. If you don't
-  tick it, nothing is written to disk. You can clear it any time by logging out.
+  named `auth.json` in your user-data folder on your own device. The API key is
+  **encrypted at rest** using your operating system's keychain/DPAPI where
+  available. If you don't tick "remember me", nothing is written to disk. You can
+  clear it any time by logging out.
 - **Downloaded images.** When you save an image, it is written to the location
   you choose, on your own computer.
 - **App settings** (such as the NSFW toggle) live only in the running app.
@@ -63,6 +65,23 @@ KawaiiBooru always filters out sexualized-minor content (tags such as `loli`,
 safe-only content when you are logged out. This filtering happens locally in the
 app. Beyond that, the art shown comes from Danbooru and is subject to Danbooru's
 own moderation, ratings, and policies.
+
+## Security of your data and your device
+
+Because all data stays on your own computer, **its safety is in your hands**.
+KawaiiBooru encrypts your saved API key where the operating system allows, but
+keeping your device, operating-system account, and Danbooru credentials secure is
+your responsibility. Feris cannot access, recover, reset, or delete anything on
+your machine, and is not responsible for any loss, theft, or exposure of data
+resulting from your device, your network, malware, or your own actions.
+
+## Your rights and your jurisdiction
+
+Privacy laws (such as the GDPR or CCPA) generally give people rights to access,
+correct, or delete the personal data a company holds about them. **Feris holds no
+personal data about you**, so there is nothing to access, correct, export, or
+delete — these requests do not apply here. You remain responsible for using the
+app in compliance with the laws of your own country or jurisdiction.
 
 ## Children's privacy
 
