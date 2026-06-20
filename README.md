@@ -32,8 +32,9 @@ into KawaiiBooru. Here's how:
    field, and **type your username**, then log in.
 
 Tick **"remember me"** if you want the app to keep you signed in next time. Your
-key is stored **only on your own PC** (in `auth.json`) and is sent **only to
-Danbooru** — never to anyone else. You can revoke a key any time from the same
+key is stored **only on your own PC** (in `auth.json`), **encrypted at rest**
+using your operating system's keychain/DPAPI where available, and is sent **only
+to Danbooru** — never to anyone else. You can revoke a key any time from the same
 Danbooru API Key page.
 
 ## Fully readable source — nothing hidden
@@ -57,6 +58,7 @@ can verify them against React's official releases.
 - Danbooru's public API (`safebooru.donmai.us` when logged out, `danbooru.donmai.us`
   when logged in) — for images and tags.
 - A local file `auth.json` in your user-data folder — only if you tick "remember me".
+  The API key inside it is encrypted with your OS keychain/DPAPI where available.
   Nothing is sent anywhere except Danbooru.
 
 ## Features

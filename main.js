@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, session, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, session, dialog, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -17,6 +17,13 @@ function isDanbooruHost(url) {
   catch (e) { return false; }
 }
 
+// Only ever fetch over real web protocols — never let a renderer-supplied URL
+// reach file:, data:, or other schemes through the proxy/download helpers.
+function isHttpUrl(url) {
+  try { const p = new URL(url).protocol; return p === 'https:' || p === 'http:'; }
+  catch (e) { return false; }
+}
+
 function levelName(lvl) {
   return ({
     0: 'Anonymous', 10: 'Restricted', 20: 'Member', 30: 'Gold',
@@ -30,8 +37,31 @@ let remembered = null;    // saved creds for prefill: { login, api_key, name, le
 let persisted = false;    // whether creds are saved to disk (remember me)
 let authFile = null;
 
+// Encrypt the API key at rest with the OS keychain/DPAPI when available, so the
+// saved credentials aren't sitting on disk in plain text. Falls back to plain
+// text only if the platform offers no encryption.
+function encKey(k) {
+  try {
+    if (k && safeStorage.isEncryptionAvailable()) {
+      return { enc: true, api_key: safeStorage.encryptString(k).toString('base64') };
+    }
+  } catch (e) { /* fall through to plaintext */ }
+  return { enc: false, api_key: k };
+}
+function decKey(raw) {
+  try {
+    if (raw && raw.enc && raw.api_key) {
+      return safeStorage.decryptString(Buffer.from(raw.api_key, 'base64'));
+    }
+  } catch (e) { return null; } // encrypted but undecryptable → treat as not remembered
+  return raw ? raw.api_key : null; // legacy plaintext file
+}
+
 function writeFile(obj) {
-  try { fs.writeFileSync(authFile, JSON.stringify(obj), 'utf8'); } catch (e) { /* ignore */ }
+  try {
+    const out = { ...obj, ...encKey(obj.api_key) };
+    fs.writeFileSync(authFile, JSON.stringify(out), { encoding: 'utf8', mode: 0o600 });
+  } catch (e) { /* ignore */ }
 }
 function clearAuthFile() {
   try { if (authFile && fs.existsSync(authFile)) fs.unlinkSync(authFile); } catch (e) { /* ignore */ }
@@ -41,12 +71,13 @@ function loadAuth() {
     authFile = path.join(app.getPath('userData'), 'auth.json');
     if (fs.existsSync(authFile)) {
       const raw = JSON.parse(fs.readFileSync(authFile, 'utf8'));
-      if (raw && raw.login && raw.api_key) {
-        remembered = { login: raw.login, api_key: raw.api_key, name: raw.name, level: raw.level };
+      const key = decKey(raw);
+      if (raw && raw.login && key) {
+        remembered = { login: raw.login, api_key: key, name: raw.name, level: raw.level };
         persisted = true;
         // active === true means we were logged in last time → auto-restore
         if (raw.active) {
-          auth = { login: raw.login, api_key: raw.api_key, name: raw.name, level: raw.level };
+          auth = { login: raw.login, api_key: key, name: raw.name, level: raw.level };
         }
       }
     }
@@ -59,8 +90,9 @@ function setupWebviewAuth() {
   const ses = session.fromPartition('persist:danbooru');
   ses.webRequest.onBeforeSendHeaders((details, cb) => {
     try {
-      const host = new URL(details.url).hostname;
-      if (auth && /donmai\.us$/.test(host)) {
+      // Strictly Danbooru's own hosts only — a look-alike like "evildonmai.us"
+      // must never receive the API key.
+      if (auth && isDanbooruHost(details.url)) {
         details.requestHeaders['Authorization'] =
           'Basic ' + Buffer.from(auth.login + ':' + auth.api_key).toString('base64');
       }
@@ -130,6 +162,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
       webviewTag: true
     }
   });
@@ -336,7 +369,7 @@ ipcMain.handle('favorite', async (_e, { postId, on }) => {
 
 // ---- download original to disk ----
 ipcMain.handle('download', async (_e, { url, filename }) => {
-  if (!url) return { ok: false, error: 'no image' };
+  if (!url || !isHttpUrl(url)) return { ok: false, error: 'no image' };
   try {
     const headers = { 'User-Agent': USER_AGENT, 'Referer': (auth ? FULL_BASE : SAFE_BASE) + '/' };
     // Only ever send the API key to Danbooru itself — never to any other host.
@@ -357,7 +390,7 @@ ipcMain.handle('download', async (_e, { url, filename }) => {
 
 // ---- image proxy (beats CDN hotlink/referer protection) ----
 ipcMain.handle('fetch-image', async (_e, url) => {
-  if (!url) return null;
+  if (!url || !isHttpUrl(url)) return null;
   try {
     const headers = {
       'User-Agent': USER_AGENT,

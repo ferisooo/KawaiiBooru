@@ -1,0 +1,14 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+electron.zip
+
+# local credentials (never commit)
+auth.json
+
+# logs & OS cruft
+*.log
+.DS_Store
+Thumbs.db
