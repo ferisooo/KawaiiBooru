@@ -569,12 +569,22 @@ function App() {
     load(tags, page, nsfw, mode, true);
   }, [page]);
 
+  // Coalesce scroll handling to one check per animation frame. Reading scroll
+  // geometry forces a synchronous layout flush, and scroll events fire far more
+  // often than once per frame — so doing this on every event is pure jank on a
+  // long, growing list. The rAF guard keeps it to at most once per painted frame.
+  const scrollTick = useRef(false);
   const onGalleryScroll = (e) => {
+    if (scrollTick.current) return;
     if (loading || loadingMore || !hasMore) return;
     const el = e.currentTarget;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 700) {
-      setPage((p) => p + 1);
-    }
+    scrollTick.current = true;
+    requestAnimationFrame(() => {
+      scrollTick.current = false;
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < 700) {
+        setPage((p) => p + 1);
+      }
+    });
   };
 
   // If filtering left a page too short to overflow the viewport there'd be

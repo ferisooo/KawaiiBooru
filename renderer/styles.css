@@ -442,6 +442,9 @@ html, body {
   cursor: pointer;
   background: rgba(20, 10, 34, 0.6);
   border: 1px solid rgba(255,94,203,0.15);
+  /* isolate each card's layout + paint so scrolling a long, growing list
+     doesn't repaint/relayout the whole grid every frame */
+  contain: layout paint;
   opacity: 0;
   transform: translateY(24px) scale(.96);
   animation: cardIn .55s cubic-bezier(.2,.8,.25,1) forwards;

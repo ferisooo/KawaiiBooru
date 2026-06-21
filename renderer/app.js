@@ -534,12 +534,18 @@
       if (account === void 0 || page <= 1) return;
       load(tags, page, nsfw, mode, true);
     }, [page]);
+    const scrollTick = useRef(false);
     const onGalleryScroll = (e) => {
+      if (scrollTick.current) return;
       if (loading || loadingMore || !hasMore) return;
       const el = e.currentTarget;
-      if (el.scrollHeight - el.scrollTop - el.clientHeight < 700) {
-        setPage((p) => p + 1);
-      }
+      scrollTick.current = true;
+      requestAnimationFrame(() => {
+        scrollTick.current = false;
+        if (el.scrollHeight - el.scrollTop - el.clientHeight < 700) {
+          setPage((p) => p + 1);
+        }
+      });
     };
     useEffect(() => {
       if (loading || loadingMore || !hasMore) return;
